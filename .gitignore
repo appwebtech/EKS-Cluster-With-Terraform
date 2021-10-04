@@ -1,0 +1,13 @@
+# Variable Files
+*.tfvars
+
+# TF State backup
+*.state.backup
+
+# History
+.history
+
+# Terraform configuration folder
+
+.terraform
+.terraform/*
