@@ -65,7 +65,7 @@ module "myapp-vpc" {
 ![vpc-resources](./images/image-2.png)
 
 </hr>
-![vpc-resources](./images/image-3.png)
+![vpc-clusters](./images/image-3.png)
 
 ## Creating EKS Cluster
 
