@@ -1,21 +1,27 @@
 # EKS Cluster With Terraform
 
 
+<p float="left">
+  <img src="https://github.com/appwebtech/EKS-Cluster-With-Terraform/blob/main/images/k8s-logo.png" width="100">
+
+  <img src="https://github.com/appwebtech/EKS-Cluster-With-Terraform/blob/main/images/tf-logo.png" width="100">
+</p>
+
 ----
 
-In this project, I will automate the provisioning of Elastic Kubernetes Service (EKS) with Terraform Infrastructure as Code (IaC). There are many moving parts (creation of Roles, VPC Worker Nodes, Master Node {EKS cluster}, connecting kubectl with cluster, Node Groups, Autoscaling and the actual,deployment) in the manual creation of an EKS cluster which is prone to errors. The best way is to automate the process using Terraform.
+In this project, I will automate the provisioning of **Elastic Kubernetes Service (EKS)** with **Terraform** *Infrastructure as Code (IaC)*. There are many moving parts (**creation of Roles, VPC Worker Nodes, Master Node {EKS cluster}, connecting kubectl with cluster, Node Groups, Autoscaling and the actual,deployment**) in the manual creation of an EKS cluster which is prone to errors. The best way is to automate the process using Terraform.
 
 ----
 
 ## Overview
 
-I will be needing a **Control Plane** (**Master Nodes**) which is the actual EKS service which will manage the **Worker Nodes (WN)** where applications will be deployed. The WN will run in a VPC which will run EC2 instances or Node Group which will install all the tools in the EC2 instances. The clusters will be created in a specific region, and the nearest region to my home is eu-west-1 (Ireland). eu-west-2 (London) would still work great because the [latency speeds](https://www.awsspeedtest.com/) (based on my location) of the two regions when I tested them oscillate with more or less the same amplitude and period of a cos and sin function; some larger spikes during morning hours in the weekdays possibly due to people booting their work stations. I was going off topic, so let me crack on.
+I will need a **Control Plane** (**Master Nodes**) which is the actual EKS service. This is where the **Worker Nodes (WN)** will be managed and applications deployed. The WN will run in a VPC which will house EC2 instances or **Node Group** where the EC2 instances will be installed. The clusters will be created in a specific region, and the nearest region to my home is eu-west-1 (Ireland). eu-west-2 (London) would still work great because the [latency speeds](https://www.awsspeedtest.com/) (based on my location) of the two regions when I tested them oscillate with more or less the same amplitude and period of a cos and sin function; there are some larger spikes during morning hours of weekdays possibly due to people booting their work stations. I'm going off topic, so let me crack on.
 
 ![environment](./images/image-1.png)
 
 ## Creating VPC & Resources
 
-I will create the VPC resources with a Terraform module which is much easier as the main configuration is already in the Terraform [vpc registry](https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/latest?tab=inputs), I'll just add the resources I need as seen below.
+I will create the VPC resources with a Terraform module which is much easier as the main configuration is already in the Terraform [vpc registry](https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/latest?tab=inputs), then I'll just add the resources I need as seen below.
 
 ```terraform
 provider "aws" {
@@ -133,7 +139,7 @@ Below are the worker nodes which have been deployed.
 ![cluster-creation](./images/image-5.png)
 
 
-Checking the Workloads, we can see the Pods have been created and are  already running.
+Checking the Workloads, we can see the Pods have been created and are already running.
 
 ![cluster-creation](./images/image-6.png)
 
@@ -144,7 +150,7 @@ Checking the Workloads, we can see the Pods have been created and are  already r
 
 ## Deploying Nginx Server
 
-I used a yaml file to create my nginx deployment with three replicas and they are up and running.
+I used a yaml file to create my nginx deployment with three replicas and after applying the config file, they are up and running.
 
 ```yaml
 apiVersion: apps/v1
@@ -186,6 +192,6 @@ spec:
 
 ![deployment](./images/image-8.png)
 
-And here we are nginx running. There appears to have been a parsing error of my YAML file to JSON due to a typo which actually is not there, but the application and service were created successfully.
+And here we have nginx running. There appears to have been a parsing error of my YAML file to JSON due to a typo which actually is not there as my YAML lint parsed my file without errors. Nevertheless the application and service were created successfully.
 
 ![deployment](./images/image-9.png)
