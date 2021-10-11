@@ -1,161 +1,50 @@
 # EKS Cluster With Terraform
 
+<p float="left">
+  <img src="https://github.com/appwebtech/EKS-Cluster-With-Terraform/blob/main/images/k8s-logo.png" width="100">
 
-----
+  <img src="https://github.com/appwebtech/EKS-Cluster-With-Terraform/blob/main/images/tf-logo.png" width="100">
 
-In this project, I will automate the provisioning of Elastic Kubernetes Service (EKS) with Terraform Infrastructure as Code (IaC). There are many moving parts (creation of Roles, VPC Worker Nodes, Master Node {EKS cluster}, connecting kubectl with cluster, Node Groups, Autoscaling and the actual,deployment) in the manual creation of an EKS cluster which is prone to errors. The best way is to automate the process using Terraform.
+  <img src="https://github.com/appwebtech/Ansible-Automation-App-Deployment/blob/main/images/Ansible-logo.png" width="100">
+</p>
 
 ----
 
 ## Overview
 
-I will be needing a **Control Plane** (**Master Nodes**) which is the actual EKS service which will manage the **Worker Nodes (WN)** where applications will be deployed. The WN will run in a VPC which will run EC2 instances or Node Group which will install all the tools in the EC2 instances. The clusters will be created in a specific region, and the nearest region to my home is eu-west-1 (Ireland). eu-west-2 (London) would still work great because the [latency speeds](https://www.awsspeedtest.com/) (based on my location) of the two regions when I tested them oscillate with more or less the same amplitude and period of a cos and sin function; some larger spikes during morning hours in the weekdays possibly due to people booting their work stations. I was going off topic, so let me crack on.
+I will be integrating Ansible to automate app deployment with EKS and Terraform. I have my environment set up from [this previous project](https://github.com/appwebtech/EKS-Cluster-With-Terraform), so I will execute **terraform apply** to create the cluster.
 
-![environment](./images/image-1.png)
+![vpc-clusters2](./images/image-3.png)
 
-## Creating VPC & Resources
+The next thing to do is to install a the following tools then run the playbook.
 
-I will create the VPC resources with a Terraform module which is much easier as the main configuration is already in the Terraform [vpc registry](https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/latest?tab=inputs), I'll just add the resources I need as seen below.
+1. Openshift
+2. PyYAML
 
-```terraform
-provider "aws" {
-  region = "eu-west-1"
-}
+The playbook ran successfully, now I'll connect to the cluster and see if the namespace was created.
 
-variable "vpc_cidr_block" {}
-variable "private_subnet_cidr_blocks" {}
-variable "public_subnet_cidr_blocks" {}
+![playbook-1](./images/image-10.png)
 
-data "aws_availability_zones" "azs" {}
+I'll export the path using Kubeconfig and get the namespaces just so I see if the **my-app** is there.
 
-module "myapp-vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "3.7.0"
+![playbook-2](./images/image-11.png)
 
-  name            = "myapp-vpc"
-  cidr            = var.vpc_cidr_block
-  private_subnets = var.private_subnet_cidr_blocks
-  public_subnets  = var.public_subnet_cidr_blocks
-  azs             = data.aws_availability_zones.azs.names
+Because executing k8s works and I have created a namespace, I will actually deploy an application from the k8s config file.
 
-  enable_nat_gateway   = true
-  single_nat_gateway       = true
-  enable_dns_hostnames = true
+## Deploy App in new Namespace
 
-  tags = {
-    "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
-  }
-  public_subnet_tags = {
-    "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
-    "kubernetes.io/role/elb" = 1
-  }
-  private_subnet_tags = {
-    "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-```
-
-![vpc-resources](./images/image-2.png)
-
-</hr>
-![vpc-resources](./images/image-3.png)
-
-## Creating EKS Cluster
-
-Next I'll be creating EKS cluster (Master and Worker Nodes) by leveraging the [Terraform eks module](https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/latest). I want the private subnets to be used for the workload and the public ones for resources like loadbalancer. I'll configure that.
-
-```terraform
-module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "17.20.0"
-
-  cluster_name = "myapp-eks-cluster"
-  cluster_version = "1.17"
-  subnets = module.myapp-vpc.private_subnets
-  vpc_id = module.myapp-vpc.vpc_id
-
-  tags = {
-      environment = "development"
-      application = "myapp"
-  }
-
-  worker_groups = [
-      {
-          instance_type = "t2.small"
-          name = "worker-group-1"
-          asg_desired_capacity = 2
-      },
-      {
-          instance_type = "t2.medium"
-          name = "worker-group-2"
-          asg_desired_capacity = 1
-      }
-  ]
-
-}
-```
-
-In order for Terraform to access the cluster, I'll configure the credentials as follows;
-
-```terraform
-provider "kubernetes" {
-  load_config_file = "false"
-  host = data.aws_eks_cluster.myapp-cluster.endpoint
-  token = data.aws_eks_cluster_auth.myapp-cluster.token
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.myapp-cluster.certificate_authority.0.data)
-}
-```
-
-The cluster has been successfully created after around 12 minutes. I defined 2 worker nodes with t2.small EC2 instances and 1 worker node of t2.medium EC2 instance.
-
-```terraform
-worker_groups = [
-      {
-          instance_type = "t2.small"
-          name = "worker-group-1"
-          asg_desired_capacity = 2
-      },
-      {
-          instance_type = "t2.medium"
-          name = "worker-group-2"
-          asg_desired_capacity = 1
-      }
-  ]
-```
-
-![cluster-creation](./images/image-4.png)
-
-</hr>
-
-Below are the worker nodes which have been deployed.
- 
-![cluster-creation](./images/image-5.png)
-
-
-Checking the Workloads, we can see the Pods have been created and are  already running.
-
-![cluster-creation](./images/image-6.png)
-
-</hr>
-
-![cluster-creation](./images/image-7.png)
-
-
-## Deploying Nginx Server
-
-I used a yaml file to create my nginx deployment with three replicas and they are up and running.
+Below is the Nginx deployment.
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
+  name: nginx-deployment
 spec:
   selector:
     matchLabels:
       app: nginx
-  replicas: 1 # tells deployment to run 2 pods matching the template
+  replicas: 1 # tells deployment to run 1 pods matching the template
   template:
     metadata:
       labels:
@@ -163,7 +52,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx
+        image: nginx:1.14.2
         ports:
         - containerPort: 80
 ---
@@ -176,16 +65,16 @@ metadata:
 spec:
   ports:
   - name: http
-    port:80
+    port: 80 
     protocol: TCP
     targetPort: 80
   selector:
-      app: nginx
+    app: nginx
   type: LoadBalancer
 ```
 
-![deployment](./images/image-8.png)
+Ansible executed successfully and created the deployment. If I query kubectl to get pod with **my-app namespace** it returns nginx deployment server running. The service is also running of type LoadBalancer which AWS automatically assigned public DNS name to access the service.
 
-And here we are nginx running. There appears to have been a parsing error of my YAML file to JSON due to a typo which actually is not there, but the application and service were created successfully.
+![playbook-3](./images/image-12.png)
 
-![deployment](./images/image-9.png)
+![playbook-4](./images/image-13.png)
