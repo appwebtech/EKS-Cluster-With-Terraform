@@ -64,7 +64,8 @@ module "myapp-vpc" {
 ![vpc-resources](./images/image-2.png)
 
 </hr>
-![vpc-clusters](./images/image-3.png)
+
+![vpc-clusters2](./images/image-3.png)
 
 ## Creating EKS Cluster
 
@@ -129,22 +130,22 @@ worker_groups = [
   ]
 ```
 
-![cluster-creation](./images/image-4.png)
+![cluster-creation1](./images/image-4.png)
 
 </hr>
 
 Below are the worker nodes which have been deployed.
  
-![cluster-creation](./images/image-5.png)
+![cluster-creation2](./images/image-5.png)
 
 
 Checking the Workloads, we can see the Pods have been created and are already running.
 
-![cluster-creation](./images/image-6.png)
+![cluster-creation3](./images/image-6.png)
 
 </hr>
 
-![cluster-creation](./images/image-7.png)
+![cluster-creation4](./images/image-7.png)
 
 
 ## Deploying Nginx Server
