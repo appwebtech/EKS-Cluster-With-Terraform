@@ -11,7 +11,6 @@
 
 In this project, I will automate the provisioning of **Elastic Kubernetes Service (EKS) cluster** with **Terraform** *Infrastructure as Code (IaC)*. There are many moving parts (**creation of Roles, VPC Worker Nodes, Master Node {EKS cluster}, connecting kubectl with cluster, Node Groups, Autoscaling and the actual,deployment**) in the manual creation of an EKS cluster which is prone to errors. The best way is to automate the process using Terraform.
 
-----
 
 ## Overview
 
